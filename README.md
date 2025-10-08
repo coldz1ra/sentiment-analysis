@@ -90,3 +90,9 @@ streamlit run app/app.py
 ```bash
 python src/predict.py --text "I absolutely love this product!"
 ```
+
+## Results (holdout)
+Macro F1: 0.9222
+negative: P=0.927 R=0.917 F1=0.922
+positive: P=0.918 R=0.928 F1=0.923
+Artifacts: `outputs/confusion_matrix.png`, `outputs/confusion_matrix_norm.png`, `outputs/roc_curve.png`, `outputs/pr_curve.png`.
