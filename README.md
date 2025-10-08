@@ -1,4 +1,5 @@
 # Sentiment Analysis of Reviews
+![CI](https://github.com/coldz1ra/sentiment-analysis/actions/workflows/python-ci.yml/badge.svg)
 
 A clean, production-like **NLP project** that classifies review sentiment (positive / negative / neutral), explores the data, and reports business insights.
 
