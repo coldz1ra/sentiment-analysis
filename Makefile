@@ -30,3 +30,7 @@ threshold:
 
 clean:
 	rm -rf models/* outputs/*
+
+.PHONY: run-app
+run-app:
+	$(PYBIN) -m streamlit run app/app.py

@@ -83,7 +83,7 @@ flake8 src
 
 ## 🌐 Streamlit demo
 ```bash
-streamlit run app/app.py
+make run-app
 ```
 
 ## 🔮 Predict from CLI
