@@ -1,4 +1,6 @@
-import os, glob, joblib
+import os
+import glob
+import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -62,7 +64,7 @@ if hasattr(clf, "coef_"):
         dfw.to_csv(os.path.join(OUT_DIR, f"top_words_{cls}.csv"), index=False)
 
         # и PNG-график
-        fig = plt.figure(figsize=(8,6))
+        fig = plt.figure(figsize=(8, 6))
         plt.barh(dfw["feature"].iloc[::-1], dfw["weight"].iloc[::-1])
         plt.title(f"Top words — {cls}")
         plt.tight_layout()
@@ -73,4 +75,5 @@ else:
         "Classifier has no coef_; top words skipped."
     )
 
-print("Saved into outputs/:", [f for f in os.listdir(OUT_DIR) if f.startswith(("errors","top_words","confusion","roc","pr_"))])
+print("Saved into outputs/:", [f for f in os.listdir(OUT_DIR)
+      if f.startswith(("errors", "top_words", "confusion", "roc", "pr_"))])

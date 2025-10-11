@@ -1,4 +1,5 @@
-import argparse, os
+import argparse
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -13,9 +14,10 @@ from src.config import cfg
 from src.utils import ensure_dir, save_artifact
 from src.preprocess import clean_text
 
+
 def build_pipeline(model: str):
     if model == "logreg":
-       clf = LogisticRegression(max_iter=300, class_weight="balanced")
+        clf = LogisticRegression(max_iter=300, class_weight="balanced")
     elif model == "linearsvc":
         clf = LinearSVC()
     else:
@@ -24,7 +26,7 @@ def build_pipeline(model: str):
     pipe = Pipeline([
         ("tfidf", TfidfVectorizer(
             preprocessor=clean_text,
-            ngram_range=(1,2),
+            ngram_range=(1, 2),
             min_df=3,
             max_df=0.9,
             sublinear_tf=True,
@@ -32,6 +34,7 @@ def build_pipeline(model: str):
         ("clf", clf),
     ])
     return pipe
+
 
 def main(args):
     df = pd.read_csv(args.data_path)
@@ -56,12 +59,14 @@ def main(args):
 
     # persist test split and basic metrics
     import joblib
-    joblib.dump({'X_test': X_test.tolist(), 'y_test': y_test.tolist()}, os.path.join(args.model_dir, 'holdout.joblib'))
+    joblib.dump({'X_test': X_test.tolist(), 'y_test': y_test.tolist()},
+                os.path.join(args.model_dir, 'holdout.joblib'))
     y_pred = pipe.predict(X_test)
     report = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
     with open(os.path.join(args.model_dir, 'metrics.json'), 'w') as f:
         json.dump(report, f, indent=2)
     print(json.dumps(report, indent=2))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -69,6 +74,6 @@ if __name__ == "__main__":
     parser.add_argument("--model_dir", type=str, default=cfg.model_dir)
     parser.add_argument("--test_size", type=float, default=cfg.test_size)
     parser.add_argument("--seed", type=int, default=cfg.seed)
-    parser.add_argument("--model", type=str, default="logreg", choices=["logreg","linearsvc"])
+    parser.add_argument("--model", type=str, default="logreg", choices=["logreg", "linearsvc"])
     args = parser.parse_args()
     main(args)

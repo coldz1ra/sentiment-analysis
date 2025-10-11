@@ -12,6 +12,7 @@ except LookupError:
 
 STOPWORDS = set(stopwords.words('english'))
 
+
 def clean_text(s: str) -> str:
     if not isinstance(s, str):
         return ""
@@ -19,6 +20,7 @@ def clean_text(s: str) -> str:
     s = re.sub(r"[^a-z0-9'\s]", ' ', s)
     s = re.sub(r"\s+", ' ', s).strip()
     return s
+
 
 def remove_stopwords(tokens: Iterable[str]) -> Iterable[str]:
     return [t for t in tokens if t not in STOPWORDS]

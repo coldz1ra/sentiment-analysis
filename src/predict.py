@@ -1,32 +1,51 @@
-import argparse, os, json
+import os
+import glob
+import argparse
+
+import numpy as np
 from src.utils import load_artifact
-from src.config import cfg
-
-def main(args):
-    model = load_artifact(os.path.join(args.model_dir, 'model_logreg.joblib'))
-    le = load_artifact(os.path.join(args.model_dir, 'label_encoder.joblib'))
-    text = args.text
-    pred_idx = model.predict([text])[0]
-label = le.inverse_transform([pred_idx])[0]
-
-if hasattr(model.named_steps['clf'], 'predict_proba'):
-    probs = model.predict_proba([text])[0]
-    pos_idx = 1 if len(le.classes_) == 2 else probs.argmax()
-
-    tpath = os.path.join(args.model_dir, "threshold.json")
-    if os.path.exists(tpath) and len(le.classes_) == 2:
-        thr = json.load(open(tpath))["best_threshold"]
-        pred_idx = int(probs[pos_idx] >= thr)
-        label = le.inverse_transform([pred_idx])[0]
-
-    print(f"Prediction: {label} (confidence={probs[pos_idx]:.3f})")
-else:
-    print(f"Prediction: {label}")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--text', type=str, required=True, help='Text to classify')
-    parser.add_argument('--model_dir', type=str, default=cfg.model_dir)
+def load_best_model(model_dir: str):
+    best_path = os.path.join(model_dir, "model_best.joblib")
+    if os.path.exists(best_path):
+        return load_artifact(best_path)
+    gl = glob.glob(os.path.join(model_dir, "model_*.joblib"))
+    assert gl, "No saved model found in models/"
+    return load_artifact(gl[0])
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Predict sentiment for a given text.")
+    parser.add_argument("--model_dir", type=str, default="models")
+    parser.add_argument("--text", type=str, required=True, help="Input text to classify")
     args = parser.parse_args()
-    main(args)
+
+    model = load_best_model(args.model_dir)
+    le = load_artifact(os.path.join(args.model_dir, "label_encoder.joblib"))
+
+    text = args.text.strip()
+    if not text:
+        print("Empty text.")
+        return 1
+
+    pred_idx = model.predict([text])[0]
+    label = le.inverse_transform([pred_idx])[0]
+    # если модель умеет вероятности — покажем confidence
+    prob = None
+    if hasattr(model.named_steps["clf"], "predict_proba"):
+        prob = float(model.predict_proba([text])[:, 1][0])
+    elif hasattr(model.named_steps["clf"], "decision_function"):
+        # приведём margin к [0,1] через сигмоиду — ориентировочная уверенность
+        import math
+        prob = 1 / (1 + math.exp(-float(model.decision_function([text])[0])))
+
+    if prob is not None:
+        print(f"Prediction: {label} (confidence ~ {prob:.3f})")
+    else:
+        print(f"Prediction: {label}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
