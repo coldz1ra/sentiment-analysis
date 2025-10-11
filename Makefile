@@ -26,7 +26,7 @@ tune:
 	$(PYBIN) -m src.tune --data_path data/reviews_mapped.csv --model_dir models
 
 threshold:
-	$(PYBIN) -m src.threshold --model_dir models --model_file model_logreg.joblib
+	$(PYBIN) -m src.threshold --model_dir models --out models/threshold.txt
 
 clean:
 	rm -rf models/* outputs/*
