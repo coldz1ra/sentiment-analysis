@@ -109,3 +109,10 @@ Artifacts: \`outputs/confusion_matrix.png\`, \`outputs/confusion_matrix_norm.png
 - Negatives cluster around delivery/returns support issues.
 - Positives highlight product quality and value-for-money.
 - Most errors are very short or ironic texts (see `outputs/errors.csv`).
+
+
+## Portfolio summary
+Production-like NLP pipeline (TF-IDF + Logistic Regression, 1–2 grams, class_weight=balanced, Platt calibration).  
+Holdout Macro F1: **0.898** · Tuned threshold: **0.470**.  
+Artifacts: CM/ROC/PR/Calibration plots in `docs/`.  
+Interfaces: Streamlit (`make run-app`) and REST API (`make run-api`, see `/docs`).
