@@ -14,3 +14,7 @@ outputs/
 
 # OS
 .DS_Store
+.Rhistory
+evaluate.py
+src/*backup*.py
+src/*.save
