@@ -1,5 +1,8 @@
-import os, json, argparse
-import numpy as np, pandas as pd
+import os
+import json
+import argparse
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import classification_report
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -7,19 +10,24 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
+
 def build(model_name, ngram_max, class_weight, stopwords=None):
     tfidf = TfidfVectorizer(ngram_range=(1, ngram_max), stop_words=stopwords)
     if model_name == "logreg":
-        clf = LogisticRegression(max_iter=300, class_weight=None if class_weight=="None" else class_weight)
+        clf = LogisticRegression(max_iter=300,
+                                 class_weight=None if class_weight == "None" else class_weight)
     elif model_name == "svm":
-        clf = LinearSVC(class_weight=None if class_weight=="None" else class_weight)
+        clf = LinearSVC(class_weight=None if class_weight == "None" else class_weight)
     else:
         raise ValueError("use --model logreg|svm")
     return Pipeline([("tfidf", tfidf), ("clf", clf)])
 
+
 def load_stopwords(path):
-    if not path or not os.path.exists(path): return None
+    if not path or not os.path.exists(path):
+        return None
     return sorted({w.strip() for w in open(path) if w.strip()})
+
 
 def main(args):
     os.makedirs(args.out_dir, exist_ok=True)
@@ -49,6 +57,7 @@ def main(args):
     with open(os.path.join(args.out_dir, "cv_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("Mean macro_f1:", round(summary["macro_f1"], 3))
+
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()

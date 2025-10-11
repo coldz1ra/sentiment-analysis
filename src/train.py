@@ -1,3 +1,5 @@
+from sklearn.metrics import classification_report
+from src.utils import save_artifact
 import os
 import json
 from pathlib import Path
@@ -12,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
+
 def _calibrator(base_clf, method):
     try:
         # sklearn >= 1.4
@@ -19,10 +22,6 @@ def _calibrator(base_clf, method):
     except TypeError:
         # sklearn <= 1.3
         return CalibratedClassifierCV(base_estimator=base_clf, cv=5, method=method)
-
-from sklearn.metrics import classification_report
-
-from src.utils import save_artifact
 
 
 def build_pipeline(model_name: str,

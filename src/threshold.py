@@ -1,8 +1,12 @@
-import os, glob, json, math
+import os
+import glob
+import json
+import math
 import numpy as np
 import joblib
 from sklearn.metrics import precision_recall_curve, f1_score
 from src.utils import load_artifact
+
 
 def load_best_model(model_dir):
     best = os.path.join(model_dir, "model_best.joblib")
@@ -12,13 +16,15 @@ def load_best_model(model_dir):
     assert gl, "No saved model found in models/"
     return load_artifact(gl[0])
 
+
 def get_scores(model, X):
     if hasattr(model.named_steps["clf"], "predict_proba"):
         return model.predict_proba(X)[:, 1]
     if hasattr(model.named_steps["clf"], "decision_function"):
         m = model.decision_function(X)
-        return 1/(1+np.exp(-m))  # сигмоида для SVM
+        return 1 / (1 + np.exp(-m))  # сигмоида для SVM
     raise RuntimeError("Classifier has neither predict_proba nor decision_function")
+
 
 def main(model_dir, out_file):
     holdout = joblib.load(os.path.join(model_dir, "holdout.joblib"))
@@ -39,7 +45,8 @@ def main(model_dir, out_file):
     os.makedirs(model_dir, exist_ok=True)
     with open(out_file, "w") as f:
         f.write(f"{best_t:.3f}\n")
-    print(json.dumps({"best_threshold": round(best_t,3), "best_f1": round(best_f1,3)}))
+    print(json.dumps({"best_threshold": round(best_t, 3), "best_f1": round(best_f1, 3)}))
+
 
 if __name__ == "__main__":
     import argparse
