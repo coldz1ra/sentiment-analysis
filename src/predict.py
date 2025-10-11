@@ -31,6 +31,13 @@ def main():
 
     pred_idx = model.predict([text])[0]
     label = le.inverse_transform([pred_idx])[0]
+    thr_file = os.path.join(args.model_dir, 'threshold.txt')
+    thr = None
+    if os.path.exists(thr_file):
+        try:
+            thr = float(open(thr_file).read().strip())
+        except Exception:
+            thr = None
     # если модель умеет вероятности — покажем confidence
     prob = None
     if hasattr(model.named_steps["clf"], "predict_proba"):
@@ -40,8 +47,11 @@ def main():
         import math
         prob = 1 / (1 + math.exp(-float(model.decision_function([text])[0])))
 
-    if prob is not None:
-        print(f"Prediction: {label} (confidence ~ {prob:.3f})")
+    if prob is not None and thr is not None:
+        label_by_thr = 'positive' if prob >= thr else 'negative'
+        print(f"Prediction: {label_by_thr} (p_pos={prob:.3f}, thr={thr:.3f})")
+    elif prob is not None:
+        print(f"Prediction: {label} (p_pos={prob:.3f})")
     else:
         print(f"Prediction: {label}")
     return 0
