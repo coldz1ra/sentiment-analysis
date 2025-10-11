@@ -20,7 +20,7 @@ evaluate:
 	$(PYBIN) -m src.evaluate --model_dir models --out_dir outputs
 
 inspect:
-	$(PYBIN) -m src.inspect
+	$(PYBIN) -m src.inspect_artifacts
 
 tune:
 	$(PYBIN) -m src.tune --data_path data/reviews_mapped.csv --model_dir models
