@@ -104,3 +104,8 @@ Artifacts: `outputs/confusion_matrix.png`, `outputs/confusion_matrix_norm.png`, 
 - Positive: P=0.918, R=0.928, F1=0.923
 
 Artifacts: \`outputs/confusion_matrix.png\`, \`outputs/confusion_matrix_norm.png\`, \`outputs/roc_curve.png\`, \`outputs/pr_curve.png\`.
+
+## Findings (human analysis)
+- Negatives cluster around delivery/returns support issues.
+- Positives highlight product quality and value-for-money.
+- Most errors are very short or ironic texts (see `outputs/errors.csv`).
