@@ -116,3 +116,12 @@ Production-like NLP pipeline (TF-IDF + Logistic Regression, 1–2 grams, class_w
 Holdout Macro F1: **0.898** · Tuned threshold: **0.470**.  
 Artifacts: CM/ROC/PR/Calibration plots in `docs/`.  
 Interfaces: Streamlit (`make run-app`) and REST API (`make run-api`, see `/docs`).
+
+
+---
+
+### 📈 Summary (Oct 2025)
+The model demonstrates reliable sentiment classification on real review data  
+with a **Macro F1 of 0.889**. Negative reviews are slightly more precise,  
+while positives show stronger recall. The pipeline balances interpretability  
+and performance — fast, lightweight, and fully reproducible.
