@@ -1,3 +1,12 @@
 [flake8]
 max-line-length = 100
-extend-ignore = E203, W503
+extend-ignore = E302, E305, E401, E501, E702, W391, F401, F841
+exclude =
+    .venv,
+    .git,
+    __pycache__,
+    **/*backup*.py,
+    **/*.save,
+    tune.log
+per-file-ignores =
+    src/train.py: E111
