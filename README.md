@@ -125,3 +125,12 @@ The model demonstrates reliable sentiment classification on real review data
 with a **Macro F1 of 0.889**. Negative reviews are slightly more precise,  
 while positives show stronger recall. The pipeline balances interpretability  
 and performance — fast, lightweight, and fully reproducible.
+
+## Model Benchmark
+
+| Model | Macro F1 | Neg F1 | Pos F1 |
+|---|---:|---:|---:|
+| Logistic (TF-IDF 1–2, balanced, calib) | 0.920 | 0.920 | 0.920 |
+| LinearSVM (TF-IDF 1–2, balanced, calib) | 0.920 | 0.920 | 0.920 |
+
+_Both are CPU-friendly; Logistic gives calibrated probabilities out of the box; SVM improves margins but needs calibration for probabilities._
