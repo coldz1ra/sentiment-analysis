@@ -34,3 +34,11 @@ clean:
 .PHONY: run-app
 run-app:
 	$(PYBIN) -m streamlit run app/app.py
+
+.PHONY: cv
+cv:
+	$(PYBIN) -m src.cv --data_path data/reviews_mapped.csv --out_dir outputs --model logreg --ngram_max 2 --class_weight balanced --stopwords_path data/domain_stopwords.txt
+
+.PHONY: run-api
+run-api:
+	$(PYBIN) -m uvicorn api.main:app --host 0.0.0.0 --port 8000
