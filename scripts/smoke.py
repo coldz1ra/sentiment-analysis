@@ -1,7 +1,6 @@
 # scripts/smoke.py
 import os
 import sys
-import json
 import importlib
 import pandas as pd
 

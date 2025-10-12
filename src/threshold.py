@@ -1,7 +1,6 @@
 import os
 import glob
 import json
-import math
 import numpy as np
 import joblib
 from sklearn.metrics import precision_recall_curve, f1_score

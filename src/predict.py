@@ -2,7 +2,6 @@ import os
 import glob
 import argparse
 
-import numpy as np
 from src.utils import load_artifact
 
 

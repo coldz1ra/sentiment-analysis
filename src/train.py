@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import joblib
-from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -60,18 +60,17 @@ def main(args):
     os.makedirs(args.model_dir, exist_ok=True)
 
     df = pd.read_csv(args.data_path)
-    assert "text" in df.columns and "label" in df.columns, "CSV must have columns 'text' and 'label'."
+    assert "text" in df.columns and "label" in df.columns, "CSV must have columns 'text' and 'label'."  # noqa: E501
 
     X = df["text"].astype(str).str.strip().values
     y = df["label"].astype(str).str.strip().values
 
     # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
     vc = pd.Series(y).value_counts()
-    strat = y if (vc.min() >= 2) else None
     # Robust split for tiny datasets: always try stratified split
     y_series = pd.Series(y)
     vc = y_series.value_counts()
-    unique_classes = vc.index.tolist()
+    vc.index.tolist()
     # if any class has <2 samples, duplicate one sample of that class to make it >=2
     if vc.min() < 2:
         X = list(X)

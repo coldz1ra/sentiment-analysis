@@ -1,6 +1,9 @@
-import os, glob, math
+import os
+import glob
+import math
 import streamlit as st
 from src.utils import load_artifact
+
 
 def load_best_model(model_dir="models"):
     best = os.path.join(model_dir, "model_best.joblib")
@@ -10,12 +13,14 @@ def load_best_model(model_dir="models"):
     assert gl, "No saved model found in models/"
     return load_artifact(gl[0])
 
+
 def p_positive(model, text):
     if hasattr(model.named_steps["clf"], "predict_proba"):
         return float(model.predict_proba([text])[:, 1][0])
     if hasattr(model.named_steps["clf"], "decision_function"):
-        return 1/(1+math.exp(-float(model.decision_function([text])[0])))
+        return 1 / (1 + math.exp(-float(model.decision_function([text])[0])))
     return None
+
 
 st.set_page_config(page_title="Sentiment Analysis", page_icon="💬", layout="centered")
 st.title("💬 Sentiment Analysis — Baseline (TF-IDF + Linear)")

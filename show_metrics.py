@@ -1,6 +1,5 @@
 import os
 import json
-import sys
 p_best = "models/metrics_best.json"
 p_std = "models/metrics.json"
 path = p_best if os.path.exists(p_best) else p_std

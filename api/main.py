@@ -1,14 +1,15 @@
-import os, glob, math
+import os
+import glob
 from typing import Optional, List
 from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
-import pandas as pd
 
 from src.utils import load_artifact
 
 APP_TITLE = "Sentiment API (TF-IDF + Linear)"
 MODEL_DIR = os.environ.get("MODEL_DIR", "models")
+
 
 def load_best_model(model_dir=MODEL_DIR):
     best = os.path.join(model_dir, "model_best.joblib")
@@ -18,6 +19,7 @@ def load_best_model(model_dir=MODEL_DIR):
     assert gl, "No saved model found in models/"
     return load_artifact(gl[0])
 
+
 def p_positive(model, texts: List[str]):
     clf = model.named_steps["clf"]
     if hasattr(clf, "predict_proba"):
@@ -26,20 +28,24 @@ def p_positive(model, texts: List[str]):
     if hasattr(clf, "decision_function"):
 
         m = model.decision_function(texts)
-        return 1/(1+np.exp(-m))
+        return 1 / (1 + np.exp(-m))
     return None
 
+
 app = FastAPI(title=APP_TITLE)
+
 
 class PredictIn(BaseModel):
     text: str
     threshold: Optional[float] = None
+
 
 class PredictOut(BaseModel):
     label: str
     p_positive: Optional[float] = None
     p_negative: Optional[float] = None
     applied_threshold: Optional[float] = None
+
 
 @app.on_event("startup")
 def _startup():
@@ -54,6 +60,7 @@ def _startup():
         except Exception:
             THR = None
 
+
 @app.post("/predict", response_model=PredictOut)
 def predict_one(payload: PredictIn):
     txt = payload.text.strip()
@@ -67,11 +74,13 @@ def predict_one(payload: PredictIn):
     p = float(p[0])
     thr = payload.threshold if payload.threshold is not None else (THR if THR is not None else 0.5)
     label = "positive" if p >= thr else "negative"
-    return PredictOut(label=label, p_positive=p, p_negative=1-p, applied_threshold=thr)
+    return PredictOut(label=label, p_positive=p, p_negative=1 - p, applied_threshold=thr)
+
 
 class PredictBatchIn(BaseModel):
     texts: List[str]
     threshold: Optional[float] = None
+
 
 @app.post("/predict-batch")
 def predict_batch(payload: PredictBatchIn):
@@ -84,4 +93,9 @@ def predict_batch(payload: PredictBatchIn):
         return {"pred_label": labels}
     p = p.tolist()
     labels = ["positive" if v >= thr else "negative" for v in p]
-    return {"pred_label": labels, "p_positive": p, "p_negative": [1-v for v in p], "applied_threshold": thr}
+    return {
+        "pred_label": labels,
+        "p_positive": p,
+        "p_negative": [
+            1 - v for v in p],
+        "applied_threshold": thr}
