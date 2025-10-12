@@ -68,3 +68,13 @@ jobs:
       - name: Tests
         run: |
           pytest -q -vv
+
+      - name: Smoke API
+        run: |
+          . .venv/bin/activate
+          uvicorn api.main:app --host 127.0.0.1 --port 8000 &
+          PID=$!
+          sleep 2
+          curl -s http://127.0.0.1:8000/health || true
+          curl -s -X POST http://127.0.0.1:8000/predict -H 'Content-Type: application/json' -d '{"text":"great hotel"}'
+          kill $PID || true
