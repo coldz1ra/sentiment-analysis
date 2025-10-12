@@ -60,11 +60,15 @@ def main(args):
     df = pd.read_csv(args.data_path)
     assert "text" in df.columns and "label" in df.columns, "CSV must have columns 'text' and 'label'."
 
-    X = df["text"].astype(str).values
-    y = df["label"].astype(str).values
+    X = df["text"].astype(str).str.strip().values
+    y = df["label"].astype(str).str.strip().values
 
+        # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
+    import numpy as np, pandas as pd
+    vc = pd.Series(y).value_counts()
+    strat = y if (vc.min() >= 2) else None
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=args.test_size, random_state=args.seed, stratify=y
+        X, y, test_size=args.test_size, random_state=args.seed, stratify=strat
     )
 
     le = LabelEncoder()
