@@ -42,3 +42,6 @@ cv:
 .PHONY: run-api
 run-api:
 	$(PYBIN) -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+map:
+	$(PYBIN) scripts/map_cols.py data/reviews.csv data/reviews_mapped.csv
