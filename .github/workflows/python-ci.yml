@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      MPLBACKEND: Agg
 
     steps:
       - uses: actions/checkout@v4
@@ -20,22 +23,37 @@ jobs:
           python -m pip install -U pip
           pip install -r requirements.txt
 
-      - name: Prepare tiny dataset and train (CI bootstrap)
-        env:
-          PYTHONPATH: ${{ github.workspace }}
+      - name: Bootstrap tiny dataset and train
         run: |
           mkdir -p data models
-          printf '%s
-' 'text,label' 'Very good quality, I like it, great!,positive' 'Terrible, broken on arrival,negative' 'Amazing value for money,positive' 'Worst experience ever,negative' 'Fast delivery and excellent support,positive' 'Dirty and unacceptable restroom,negative' > data/ci_reviews.csv
-          python -m src.train --data_path data/ci_reviews.csv --model_dir models --model logreg --ngram_max 2 --class_weight balanced --stopwords_path "" --calibration none --test_size 0.5
+          printf '%s\n' \
+            'text,label' \
+            'Very good quality, I like it, great!,positive' \
+            'Terrible, broken on arrival,negative' \
+            'Amazing value for money,positive' \
+            'Worst experience ever,negative' \
+            'Fast delivery and excellent support,positive' \
+            'Dirty and unacceptable restroom,negative' \
+            > data/ci_reviews.csv
+
+          # быстрый тренинг без калибровки, чтобы не ловить несовместимость версий
+          python -m src.train \
+            --data_path data/ci_reviews.csv \
+            --model_dir models \
+            --model logreg \
+            --ngram_max 2 \
+            --class_weight balanced \
+            --stopwords_path "" \
+            --calibration none \
+            --test_size 0.5
+
           cp -f models/model_logreg.joblib models/model_best.joblib || true
+          ls -lh models || true
+          test -f models/model_best.joblib
+          test -f models/label_encoder.joblib
 
       - name: Lint
-        run: |
-          flake8 src
+        run: flake8 src
 
       - name: Tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-        run: |
-          pytest -q
+        run: pytest -q -vv
