@@ -66,22 +66,73 @@ def _align_union(y_true, y_pred):
     return y_true_s, y_pred_s, y_true_idx, y_pred_idx, labels
 
 
-def _scores_binary(model, X):
+def _pick_positive_label(labels):
+    for cand in ("positive", "pos", "1", "true", "yes", "good"):
+        if cand in labels:
+            return cand
+    return labels[-1]
+
+
+def _scores_binary(model, X, labels, model_dir: Path):
+    pos_name = _pick_positive_label(labels)
+    le = None
+    le_path = model_dir / "label_encoder.joblib"
+    if le_path.exists():
+        try:
+            le = load(le_path)
+        except Exception:
+            le = None
+
+    # try predict_proba with correct column
     try:
         proba = model.predict_proba(X)
         if proba is not None:
-            if proba.ndim == 2 and proba.shape[1] >= 2:
-                return proba[:, -1]
-            if proba.ndim == 1:
-                return proba
+            idx = None
+            if hasattr(model, "classes_"):
+                cls = np.array(model.classes_)
+                if le is not None:
+                    try:
+                        # model.classes_ likely numeric; map to string names
+                        cls_named = le.inverse_transform(cls.astype(int))
+                        if pos_name in cls_named:
+                            idx = int(np.where(cls_named == pos_name)[0][0])
+                    except Exception:
+                        pass
+                if idx is None:
+                    # maybe classes_ already strings
+                    cls_named = cls.astype(str)
+                    if pos_name in cls_named:
+                        idx = int(np.where(cls_named == pos_name)[0][0])
+            if idx is None:
+                idx = proba.shape[1] - 1
+            col = proba[:, idx]
+            return np.array(col, dtype=float)
     except Exception:
         pass
+
+    # fallback to decision_function
     try:
         dec = model.decision_function(X)
         if dec is not None:
             z = np.array(dec, dtype=float)
             if z.ndim > 1:
-                z = z[:, -1]
+                if hasattr(model, "classes_"):
+                    cls = np.array(model.classes_)
+                    idx = z.shape[1] - 1
+                    if le is not None:
+                        try:
+                            cls_named = le.inverse_transform(cls.astype(int))
+                            if _pick_positive_label(labels) in cls_named:
+                                idx = int(np.where(cls_named == _pick_positive_label(labels))[0][0])
+                        except Exception:
+                            pass
+                    else:
+                        cls_named = cls.astype(str)
+                        if _pick_positive_label(labels) in cls_named:
+                            idx = int(np.where(cls_named == _pick_positive_label(labels))[0][0])
+                    z = z[:, idx]
+                else:
+                    z = z[:, -1]
             z = np.clip(z, -20, 20)
             return 1.0 / (1.0 + np.exp(-z))
     except Exception:
@@ -133,9 +184,9 @@ def main() -> None:
     cmn = np.divide(cmn, row_sum, out=np.zeros_like(cmn), where=row_sum != 0)
     _plot_cm(cmn, labels, out / "confusion_matrix_norm.png", "Confusion Matrix (normalized)", ".2f")
 
-    scores = _scores_binary(model, X_te)
+    scores = _scores_binary(model, X_te, labels, mdir)
     if scores is not None and len(labels) == 2:
-        pos_label = labels[-1]
+        pos_label = _pick_positive_label(labels)
         y_bin = (np.array(y_true_s) == pos_label).astype(int)
         fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
         RocCurveDisplay.from_predictions(y_bin, scores, ax=ax)
@@ -151,14 +202,6 @@ def main() -> None:
         fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
         plt.close(fig)
     else:
-        Path(out / "roc_curve.png").write_bytes(b"")
-        Path(out / "pr_curve.png").write_bytes(b"")
+        print("Skip ROC/PR: scores=None or len(labels)!=2")
 
-    print("CM labels:", labels)
-    print("CM matrix:\n", cm)
-    print("Saved:", [str(p) for p in [out / "confusion_matrix.png", out /
-          "confusion_matrix_norm.png", out / "roc_curve.png", out / "pr_curve.png"]])
-
-
-if __name__ == "__main__":
-    main()
+    print("Labels:", labels)
