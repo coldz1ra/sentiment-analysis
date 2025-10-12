@@ -1,5 +1,5 @@
 # Sentiment Analysis of Reviews
-![CI](https://github.com/coldz1ra/sentiment-analysis/actions/workflows/python-ci.yml/badge.svg)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-green)(https://github.com/coldz1ra/sentiment-analysis/actions/workflows/python-ci.yml/badge.svg)
 
 A clean, production-like **NLP project** that classifies review sentiment (positive / negative / neutral), explores the data, and reports business insights.
 
@@ -72,8 +72,8 @@ Main analytical report lives in `report/report.md`. Exported figures render to `
 - Python 3.9+.
 
 
-![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)
-![License](https://img.shields.io/badge/license-MIT-informational)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-green)(https://img.shields.io/badge/CI-GitHub%20Actions-blue)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-green) ![Coverage](https://img.shields.io/badge/coverage-via%20pytest--cov-blue)\n![License](https://img.shields.io/badge/license-MIT-informational)
 
 ## 🧪 Testing & Linting
 ```bash
