@@ -13,3 +13,4 @@ pytest==8.2.0
 fastapi>=0.111
 uvicorn>=0.30
 httpx
+pytest-cov>=4.1.0
