@@ -67,7 +67,6 @@ def main(args):
     vc = pd.Series(y).value_counts()
     strat = y if (vc.min() >= 2) else None
         # Robust split for tiny datasets: always try stratified split
-    import numpy as np, pandas as pd
     y_series = pd.Series(y)
     vc = y_series.value_counts()
     unique_classes = vc.index.tolist()
