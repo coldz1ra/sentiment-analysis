@@ -56,85 +56,62 @@ def _plot_cm(cm, labels, path: Path, title: str, fmt: str) -> None:
     plt.close(fig)
 
 
-def _align_union(y_true, y_pred):
-    y_true_s = np.array([str(v) for v in y_true])
-    y_pred_s = np.array([str(v) for v in y_pred])
-    labels = sorted(np.unique(np.concatenate([y_true_s, y_pred_s])))
-    lab2idx = {lab: i for i, lab in enumerate(labels)}
-    y_true_idx = np.array([lab2idx[v] for v in y_true_s])
-    y_pred_idx = np.array([lab2idx[v] for v in y_pred_s])
-    return y_true_s, y_pred_s, y_true_idx, y_pred_idx, labels
-
-
-def _pick_positive_label(labels):
-    for cand in ("positive", "pos", "1", "true", "yes", "good"):
-        if cand in labels:
-            return cand
-    return labels[-1]
-
-
-def _scores_binary(model, X, labels, model_dir: Path):
-    pos_name = _pick_positive_label(labels)
+def _scores_binary(model, X, pos_name: str, model_dir: Path):
+    from joblib import load as _load
     le = None
     le_path = model_dir / "label_encoder.joblib"
     if le_path.exists():
         try:
-            le = load(le_path)
+            le = _load(le_path)
         except Exception:
             le = None
 
-    # try predict_proba with correct column
     try:
         proba = model.predict_proba(X)
         if proba is not None:
             idx = None
             if hasattr(model, "classes_"):
                 cls = np.array(model.classes_)
+                # попытка через label encoder
                 if le is not None:
                     try:
-                        # model.classes_ likely numeric; map to string names
                         cls_named = le.inverse_transform(cls.astype(int))
                         if pos_name in cls_named:
                             idx = int(np.where(cls_named == pos_name)[0][0])
                     except Exception:
-                        pass
+                        idx = None
                 if idx is None:
-                    # maybe classes_ already strings
                     cls_named = cls.astype(str)
                     if pos_name in cls_named:
                         idx = int(np.where(cls_named == pos_name)[0][0])
             if idx is None:
                 idx = proba.shape[1] - 1
-            col = proba[:, idx]
-            return np.array(col, dtype=float)
+            return np.asarray(proba[:, idx], dtype=float)
     except Exception:
         pass
 
-    # fallback to decision_function
     try:
         dec = model.decision_function(X)
         if dec is not None:
             z = np.array(dec, dtype=float)
             if z.ndim > 1:
+                idx = z.shape[1] - 1
                 if hasattr(model, "classes_"):
                     cls = np.array(model.classes_)
-                    idx = z.shape[1] - 1
                     if le is not None:
                         try:
                             cls_named = le.inverse_transform(cls.astype(int))
-                            if _pick_positive_label(labels) in cls_named:
-                                idx = int(np.where(cls_named == _pick_positive_label(labels))[0][0])
+                            if pos_name in cls_named:
+                                idx = int(np.where(cls_named == pos_name)[0][0])
                         except Exception:
                             pass
                     else:
                         cls_named = cls.astype(str)
-                        if _pick_positive_label(labels) in cls_named:
-                            idx = int(np.where(cls_named == _pick_positive_label(labels))[0][0])
-                    z = z[:, idx]
-                else:
-                    z = z[:, -1]
+                        if pos_name in cls_named:
+                            idx = int(np.where(cls_named == pos_name)[0][0])
+                z = z[:, idx]
             z = np.clip(z, -20, 20)
-            return 1.0 / (1.0 + np.exp(-z))
+            return 1 / (1 + np.exp(-z))
     except Exception:
         pass
     return None
@@ -164,16 +141,55 @@ def main() -> None:
     X = df["text"].astype(str).values
     y = df["label"].astype(str).values
     _, X_te, _, y_te = train_test_split(
-        X, y, test_size=args.test_size, random_state=args.seed, stratify=y
-    )
+        X, y, test_size=args.test_size, random_state=args.seed, stratify=y)
 
-    y_pred = model.predict(X_te)
-    y_true_s, y_pred_s, y_true_idx, y_pred_idx, labels = _align_union(y_te, y_pred)
+    # --- МЭППИНГ ПРЕДСКАЗАНИЙ В ИМЕНА КЛАССОВ ---
+    y_pred_raw = model.predict(X_te)
+    # если предсказания числовые — переведём в имена ('negative'/'positive') по лучшей эвристике
+    try:
+        # 1) попробуем label_encoder
+        le_path = mdir / "label_encoder.joblib"
+        if le_path.exists():
+            le = load(le_path)
+            y_pred_named = le.inverse_transform(np.asarray(y_pred_raw).astype(int))
+        else:
+            raise RuntimeError("no label encoder")
+    except Exception:
+        # 2) если два класса и y_true в {'negative','positive'}, y_pred в {0,1}
+        y_pred_arr = np.asarray(y_pred_raw)
+        if set(
+                np.unique(y_te)) <= {
+                "negative",
+                "positive"} and set(
+                np.unique(y_pred_arr)) <= {
+                    0,
+                1}:
+            # проверим обе маппы и возьмём с большей долей совпадений
+            map_a = {0: "negative", 1: "positive"}
+            map_b = {0: "positive", 1: "negative"}
+            a = np.array([map_a[int(v)] for v in y_pred_arr])
+            b = np.array([map_b[int(v)] for v in y_pred_arr])
+            acc_a = (a == y_te).mean()
+            acc_b = (b == y_te).mean()
+            y_pred_named = a if acc_a >= acc_b else b
+        else:
+            # последний шанс — приведём всё к строкам как есть
+            y_pred_named = np.array([str(v) for v in y_pred_raw])
 
+    # --- Метрики/визуализации ---
+    labels = sorted(np.unique(np.concatenate([y_te, y_pred_named])))
     report = classification_report(
-        y_true_s, y_pred_s, labels=labels, output_dict=True, zero_division=0
-    )
+        y_te,
+        y_pred_named,
+        labels=labels,
+        output_dict=True,
+        zero_division=0)
     (out / "classification_report.json").write_text(json.dumps(report, indent=2))
+
+    # Confusion matrix (через индексы)
+    lab2idx = {lab: i for i, lab in enumerate(labels)}
+    y_true_idx = np.array([lab2idx[v] for v in y_te])
+    y_pred_idx = np.array([lab2idx[v] for v in y_pred_named])
 
     cm = confusion_matrix(y_true_idx, y_pred_idx, labels=range(len(labels)))
     pd.DataFrame(cm, index=labels, columns=labels).to_csv(out / "confusion_matrix.csv")
@@ -184,24 +200,30 @@ def main() -> None:
     cmn = np.divide(cmn, row_sum, out=np.zeros_like(cmn), where=row_sum != 0)
     _plot_cm(cmn, labels, out / "confusion_matrix_norm.png", "Confusion Matrix (normalized)", ".2f")
 
-    scores = _scores_binary(model, X_te, labels, mdir)
-    if scores is not None and len(labels) == 2:
-        pos_label = _pick_positive_label(labels)
-        y_bin = (np.array(y_true_s) == pos_label).astype(int)
-        fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        RocCurveDisplay.from_predictions(y_bin, scores, ax=ax)
-        ax.set_title("ROC Curve")
-        fig.tight_layout()
-        fig.savefig(out / "roc_curve.png", bbox_inches="tight", facecolor="white")
-        plt.close(fig)
+    # ROC/PR только для бинарного случая
+    if len(labels) == 2:
+        pos_label = "positive" if "positive" in labels else labels[-1]
+        scores = _scores_binary(model, X_te, pos_label, mdir)
+        if scores is not None:
+            y_bin = (np.array(y_te) == pos_label).astype(int)
+            fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+            RocCurveDisplay.from_predictions(y_bin, scores, ax=ax)
+            ax.set_title("ROC Curve")
+            fig.tight_layout()
+            fig.savefig(out / "roc_curve.png", bbox_inches="tight", facecolor="white")
+            plt.close(fig)
 
-        fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        PrecisionRecallDisplay.from_predictions(y_bin, scores, ax=ax)
-        ax.set_title("Precision-Recall Curve")
-        fig.tight_layout()
-        fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
-        plt.close(fig)
+            fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+            PrecisionRecallDisplay.from_predictions(y_bin, scores, ax=ax)
+            ax.set_title("Precision-Recall Curve")
+            fig.tight_layout()
+            fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
+            plt.close(fig)
+        else:
+            Path(out / "roc_curve.png").write_bytes(b"")
+            Path(out / "pr_curve.png").write_bytes(b"")
     else:
-        print("Skip ROC/PR: scores=None or len(labels)!=2")
+        Path(out / "roc_curve.png").write_bytes(b"")
+        Path(out / "pr_curve.png").write_bytes(b"")
 
     print("Labels:", labels)
