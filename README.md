@@ -177,3 +177,8 @@ Total: 50000
 | Confusion Matrix | ROC Curve | PR Curve |
 |---|---|---|
 | ![Confusion](docs/img/confusion_matrix.png?raw=1) |
+
+
+| ROC Curve | PR Curve |
+|:--:|:--:|
+| ![ROC](docs/img/roc_curve.png) | ![PR](docs/img/pr_curve.png) |
