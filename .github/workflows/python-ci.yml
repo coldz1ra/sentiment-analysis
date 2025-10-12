@@ -18,12 +18,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install deps
+      - name: Install deps (global, for flake8/pytest fallback)
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt
 
-      - name: Bootstrap tiny dataset and train
+      - name: Create test venv (.venv) and install deps
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+
+      - name: Bootstrap tiny dataset and train inside .venv
         run: |
           mkdir -p data models
           printf '%s\n' \
@@ -36,9 +43,12 @@ jobs:
             'Dirty and unacceptable restroom,negative' \
             > data/ci_reviews.csv
 
-          # быстрый тренинг без калибровки, чтобы не ловить несовместимость версий
+          # тесты ждут reviews_mapped.csv — подложим тот же мини-набор
+          cp -f data/ci_reviews.csv data/reviews_mapped.csv
+
+          . .venv/bin/activate
           python -m src.train \
-            --data_path data/ci_reviews.csv \
+            --data_path data/reviews_mapped.csv \
             --model_dir models \
             --model logreg \
             --ngram_max 2 \
@@ -48,12 +58,13 @@ jobs:
             --test_size 0.5
 
           cp -f models/model_logreg.joblib models/model_best.joblib || true
-          ls -lh models || true
           test -f models/model_best.joblib
           test -f models/label_encoder.joblib
 
       - name: Lint
-        run: flake8 src
+        run: |
+          flake8 src
 
       - name: Tests
-        run: pytest -q -vv
+        run: |
+          pytest -q -vv
