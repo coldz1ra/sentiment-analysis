@@ -65,10 +65,10 @@ def main(args):
     X = df["text"].astype(str).str.strip().values
     y = df["label"].astype(str).str.strip().values
 
-        # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
+    # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
     vc = pd.Series(y).value_counts()
     strat = y if (vc.min() >= 2) else None
-        # Robust split for tiny datasets: always try stratified split
+    # Robust split for tiny datasets: always try stratified split
     y_series = pd.Series(y)
     vc = y_series.value_counts()
     unique_classes = vc.index.tolist()
