@@ -25,15 +25,8 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           mkdir -p data models
-          cat > data/ci_reviews.csv <<'CSV'
-          text,label
-          Very good quality, I like it, great!,positive
-          Terrible, broken on arrival,negative
-          Amazing value for money,positive
-          Worst experience ever,negative
-          Fast delivery and excellent support,positive
-          Dirty and unacceptable restroom,negative
-          CSV
+          printf '%s
+' 'text,label' 'Very good quality, I like it, great!,positive' 'Terrible, broken on arrival,negative' 'Amazing value for money,positive' 'Worst experience ever,negative' 'Fast delivery and excellent support,positive' 'Dirty and unacceptable restroom,negative' > data/ci_reviews.csv
           python -m src.train --data_path data/ci_reviews.csv --model_dir models --model logreg --ngram_max 2 --class_weight balanced --stopwords_path "" --calibration none --test_size 0.5
           cp -f models/model_logreg.joblib models/model_best.joblib || true
 
