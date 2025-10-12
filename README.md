@@ -170,3 +170,9 @@ curl -s -X POST http://127.0.0.1:8000/predict \
 - Small distil transformer for robustness, then distillation to LR.
 - Better text cleaning (emoji, elongations), language detect fallback.
 - Hard-negative mining from FP/FN.
+
+## Dataset stats
+Total: 50000
+
+- positive: 25000
+- negative: 25000
