@@ -1,18 +1,48 @@
 name: Python CI
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install
+
+      - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt
+
+      - name: Prepare tiny dataset and train (CI bootstrap)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          mkdir -p data models
+          cat > data/ci_reviews.csv <<'CSV'
+text,label
+Very good quality, I like it, great!,positive
+Terrible, broken on arrival,negative
+Amazing value for money,positive
+Worst experience ever,negative
+Fast delivery and excellent support,positive
+Dirty and unacceptable restroom,negative
+CSV
+          python -m src.train --data_path data/ci_reviews.csv --model_dir models --model logreg --ngram_max 2 --class_weight balanced --stopwords_path "" --calibration none --test_size 0.5
+          cp -f models/model_logreg.joblib models/model_best.joblib || true
+
       - name: Lint
-        run: flake8 src
+        run: |
+          flake8 src
+
       - name: Tests
-        run: pytest -q
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest -q
