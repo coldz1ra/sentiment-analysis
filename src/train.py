@@ -70,8 +70,8 @@ def main(args):
         X, y, test_size=args.test_size, random_state=args.seed, stratify=strat
     )
 
-    le = LabelEncoder()
-    y_train_enc = le.fit_transform(y_train)
+    le = LabelEncoder().fit(y)
+    y_train_enc = le.transform(y_train)
     y_test_enc = le.transform(y_test)
 
     pipe = build_pipeline(args.model, args.ngram_max, args.class_weight,
