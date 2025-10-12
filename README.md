@@ -134,3 +134,8 @@ and performance — fast, lightweight, and fully reproducible.
 | LinearSVM (TF-IDF 1–2, balanced, calib) | 0.920 | 0.920 | 0.920 |
 
 _Both are CPU-friendly; Logistic gives calibrated probabilities out of the box; SVM improves margins but needs calibration for probabilities._
+
+### Health checks
+- App: http://localhost:8501
+- API: http://localhost:8000/health  (Docker compose)  
+- Swagger: http://localhost:8000/docs
