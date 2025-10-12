@@ -1,0 +1,1 @@
+# ADR 0002: Threshold tuning and probability calibration\n\nContext:\n- Business prefers fewer false positives.\n- Raw LR probs slightly overconfident.\n\nDecision:\n- Keep default threshold 0.5 in code, expose tuning script; allow Platt/Isotonic for analysis.\n\nConsequences:\n- Safer defaults in CLI/API; detailed metrics available in report and outputs/.\n
