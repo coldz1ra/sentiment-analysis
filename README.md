@@ -176,3 +176,9 @@ Total: 50000
 
 - positive: 25000
 - negative: 25000
+
+## Results (visuals)
+
+| Confusion Matrix | ROC Curve | PR Curve |
+|---|---|---|
+| ![Confusion](outputs/confusion_matrix.png) | ![ROC](outputs/roc_curve.png) | ![PR](outputs/pr_curve.png) |
