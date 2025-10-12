@@ -45,3 +45,8 @@ run-api:
 
 map:
 	$(PYBIN) scripts/map_cols.py data/reviews.csv data/reviews_mapped.csv
+
+
+test:
+	flake8 src api scripts tests || true
+	pytest -q -vv --cov=src --cov-report=term-missing
