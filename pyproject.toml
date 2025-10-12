@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentiment-analysis-mini"
+version = "1.0.0"
+description = "TF-IDF + Logistic Regression sentiment classifier with Streamlit and FastAPI"
+authors = [{name="coldz1ra"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools]
+packages = ["src"]
+package-dir = {"" = "."}

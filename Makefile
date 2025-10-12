@@ -10,7 +10,7 @@ export PYTHONPATH := .
 
 setup:
 	$(PY) -m venv $(VENV)
-	. $(VENV)/bin/activate && pip install -U pip && pip install -r requirements.txt && $(PYBIN) -m nltk.downloader stopwords punkt
+	. $(VENV)/bin/activate && pip install -U pip && pip install -r requirements.txt && pip install -e . && $(PYBIN) -m nltk.downloader stopwords punkt
 	touch src/__init__.py
 
 train:
