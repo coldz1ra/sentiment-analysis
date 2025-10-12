@@ -149,3 +149,24 @@ curl -s -X POST http://127.0.0.1:8000/predict \
   -H "Content-Type: application/json" \
   -d '{"text":"Very dirty restroom"}'
 ```
+
+
+## Why this design
+- Picked TF-IDF + Logistic Regression after trying Linear SVM: same F1, faster inference and calibrated probs.
+- Limited to 1–2 n-grams: beyond that, marginal gains and bigger model.
+- `class_weight=balanced`: real data was skewed; F1 improved vs uniform.
+
+## Trade-offs
+- Sarcasm and very short texts remain hard; TF-IDF is sparse and literal.
+- Domain shift hurts; threshold tuned to reduce false positives.
+- Calibration is optional; off by default in CI for stability.
+
+## Known failure cases
+- Irony (“great, another broken unit”) marked as positive.
+- Mixed reviews with conjunctions split sentiment.
+- Non-RU/EN inputs are treated as out-of-domain.
+
+## Next steps I’d consider
+- Small distil transformer for robustness, then distillation to LR.
+- Better text cleaning (emoji, elongations), language detect fallback.
+- Hard-negative mining from FP/FN.
