@@ -4,6 +4,8 @@ from typing import List, Optional
 from joblib import load
 from pathlib import Path as _Path
 
+from contextlib import asynccontextmanager
+
 app = FastAPI()
 
 MODEL = None
@@ -48,9 +50,12 @@ def _probs(model, texts: List[str]):
     return model.predict_proba(texts)[:, 1]
 
 
-@app.on_event('startup')
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     _load_model()
+    yield
+
+app.router.lifespan_context = lifespan
 
 
 @app.post('/predict', response_model=PredictOut)
