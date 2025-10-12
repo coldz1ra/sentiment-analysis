@@ -1,93 +1,99 @@
-import os
+import argparse
 import json
-import glob
-import joblib
+from pathlib import Path
 import numpy as np
+import pandas as pd
+from sklearn.metrics import (classification_report, confusion_matrix, ConfusionMatrixDisplay,
+                             RocCurveDisplay, PrecisionRecallDisplay)
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    roc_auc_score,
-    roc_curve,
-    ConfusionMatrixDisplay,
-    precision_recall_curve,
-    average_precision_score,
-)
-from src.utils import load_artifact
+from joblib import load
 
 
-def ensure_dir(p: str):
-    os.makedirs(p, exist_ok=True)
-
-
-def main(args):
-    ensure_dir(args.out_dir)
-    le = load_artifact(os.path.join(args.model_dir, "label_encoder.joblib"))
-    holdout = joblib.load(os.path.join(args.model_dir, "holdout.joblib"))
-    X_test = holdout["X_test"]
-    y_test = np.array(holdout["y_test"])
-    best_path = os.path.join(args.model_dir, "model_best.joblib")
-    if os.path.exists(best_path):
-        model_path = best_path
-    else:
-        model_glob = glob.glob(os.path.join(args.model_dir, "model_*.joblib"))
-        assert model_glob, "No saved model found in models/"
-        model_path = model_glob[0]
-    model = load_artifact(model_path)
-    print(f"Loaded model: {os.path.basename(model_path)}")
-    y_pred = model.predict(X_test)
-    report = classification_report(
-        y_test, y_pred, target_names=le.classes_, output_dict=True
-    )
-    with open(os.path.join(args.out_dir, "classification_report.json"), "w") as f:
-        json.dump(report, f, indent=2)
-    fig = plt.figure()
-    cm = confusion_matrix(y_test, y_pred)
-    disp = ConfusionMatrixDisplay(cm, display_labels=le.classes_)
-    disp.plot()
-    fig.savefig(os.path.join(args.out_dir, "confusion_matrix.png"), bbox_inches="tight")
-    plt.close(fig)
-    fig = plt.figure()
-    disp = ConfusionMatrixDisplay(
-        confusion_matrix(y_test, y_pred, normalize="true"),
-        display_labels=le.classes_,
-    )
-    disp.plot(values_format=".2f")
-    fig.savefig(
-        os.path.join(args.out_dir, "confusion_matrix_norm.png"), bbox_inches="tight"
-    )
-    plt.close(fig)
-    scores = None
-    if hasattr(model.named_steps["clf"], "predict_proba") and len(le.classes_) == 2:
-        scores = model.predict_proba(X_test)[:, 1]
-    elif hasattr(model.named_steps["clf"], "decision_function") and len(le.classes_) == 2:
-        scores = model.decision_function(X_test)
-    if scores is not None:
-        fpr, tpr, _ = roc_curve(y_test, scores, pos_label=1)
-        auc = roc_auc_score(y_test, scores)
-        fig = plt.figure()
-        plt.plot(fpr, tpr)
-        plt.plot([0, 1], [0, 1], "--")
-        plt.xlabel("FPR")
-        plt.ylabel("TPR")
-        plt.title(f"ROC (AUC={auc:.3f})")
-        fig.savefig(os.path.join(args.out_dir, "roc_curve.png"), bbox_inches="tight")
-        plt.close(fig)
-        precision, recall, _ = precision_recall_curve(y_test, scores, pos_label=1)
-        ap = average_precision_score(y_test, scores)
-        fig = plt.figure()
-        plt.step(recall, precision, where="post")
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.title(f"PR curve (AP={ap:.3f})")
-        fig.savefig(os.path.join(args.out_dir, "pr_curve.png"), bbox_inches="tight")
-        plt.close(fig)
-
-
-if __name__ == "__main__":
-    import argparse
+def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--model_dir", type=str, default="models")
-    p.add_argument("--out_dir", type=str, default="outputs")
+    p.add_argument('--data_path', default='data/reviews_mapped.csv')
+    p.add_argument('--model_dir', default='models')
+    p.add_argument('--out_dir', default='outputs')
+    p.add_argument('--seed', type=int, default=42)
+    p.add_argument('--test_size', type=float, default=0.2)
     args = p.parse_args()
-    main(args)
+
+    out = Path(args.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    mdir = Path(args.model_dir)
+    model_path = (
+        mdir /
+        'model_best.joblib') if (
+        mdir /
+        'model_best.joblib').exists() else sorted(
+            mdir.glob('model_*.joblib'))[0]
+    model = load(model_path)
+    print(f'Loaded model: {model_path.name}')
+
+    df = pd.read_csv(args.data_path)
+    assert {'text', 'label'}.issubset(df.columns), "CSV must have columns 'text' and 'label'"
+    X = df['text'].astype(str).values
+    y = df['label'].astype(str).values
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=args.test_size, random_state=args.seed, stratify=y)
+
+    y_pred = model.predict(X_te)
+    # probas — если есть
+    y_proba = None
+    if hasattr(model, 'predict_proba'):
+        try:
+            y_proba = model.predict_proba(X_te)[:, 1]
+        except Exception:
+            y_proba = None
+
+    # отчёт
+    rep = classification_report(y_te, y_pred, output_dict=True)
+    (out / 'classification_report.json').write_text(json.dumps(rep, indent=2))
+
+    # Confusion Matrix (count)
+    labels = sorted(np.unique(y))
+    cm = confusion_matrix(y_te, y_pred, labels=labels)
+    fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+    disp = ConfusionMatrixDisplay(cm, display_labels=labels)
+    disp.plot(ax=ax, cmap='Blues', colorbar=True, values_format='d')
+    ax.set_title('Confusion Matrix')
+    plt.tight_layout()
+    fig.savefig(out / 'confusion_matrix.png', bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+
+    # Confusion Matrix (normalized)
+    cmn = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+    fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+    disp = ConfusionMatrixDisplay(cmn, display_labels=labels)
+    disp.plot(ax=ax, cmap='Blues', colorbar=True, values_format='.2f')
+    ax.set_title('Confusion Matrix (normalized)')
+    plt.tight_layout()
+    fig.savefig(out / 'confusion_matrix_norm.png', bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+
+    # ROC / PR (если доступны вероятности)
+    if y_proba is not None:
+        # ROC
+        fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+        try:
+            RocCurveDisplay.from_predictions((y_te == labels[-1]).astype(int), y_proba, ax=ax)
+            ax.set_title('ROC Curve')
+            plt.tight_layout()
+            fig.savefig(out / 'roc_curve.png', bbox_inches='tight', facecolor='white')
+        finally:
+            plt.close(fig)
+        # PR
+        fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
+        try:
+            PrecisionRecallDisplay.from_predictions(
+                (y_te == labels[-1]).astype(int), y_proba, ax=ax)
+            ax.set_title('Precision-Recall Curve')
+            plt.tight_layout()
+            fig.savefig(out / 'pr_curve.png', bbox_inches='tight', facecolor='white')
+        finally:
+            plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
