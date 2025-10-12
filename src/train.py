@@ -64,7 +64,6 @@ def main(args):
     y = df["label"].astype(str).str.strip().values
 
         # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
-    import numpy as np, pandas as pd
     vc = pd.Series(y).value_counts()
     strat = y if (vc.min() >= 2) else None
     X_train, X_test, y_train, y_test = train_test_split(
