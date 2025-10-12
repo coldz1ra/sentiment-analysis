@@ -13,5 +13,5 @@ Custom reviews dataset (binary sentiment). Ensure you have permission to use and
 - If using a public dataset, cite the source in this file.
 
 ## Usage
-Place CSV at `data/reviews_mapped.csv`.  
+Place CSV at `data/reviews_mapped.csv`.
 Run: `make train && make evaluate`.

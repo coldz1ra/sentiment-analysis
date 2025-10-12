@@ -36,4 +36,3 @@ with open(tmp_std, "w") as f:
 os.replace(tmp_std, os.path.join(MODEL_DIR, "metrics.json"))
 
 print("Rebuilt: models/metrics_best.json and models/metrics.json from", os.path.basename(model_path))
-

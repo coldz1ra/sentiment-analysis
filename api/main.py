@@ -2,6 +2,7 @@ import os, glob, math
 from typing import Optional, List
 from fastapi import FastAPI
 from pydantic import BaseModel
+import numpy as np
 import pandas as pd
 
 from src.utils import load_artifact
@@ -20,10 +21,10 @@ def load_best_model(model_dir=MODEL_DIR):
 def p_positive(model, texts: List[str]):
     clf = model.named_steps["clf"]
     if hasattr(clf, "predict_proba"):
-        import numpy as np
+
         return model.predict_proba(texts)[:, 1]
     if hasattr(clf, "decision_function"):
-        import numpy as np
+
         m = model.decision_function(texts)
         return 1/(1+np.exp(-m))
     return None

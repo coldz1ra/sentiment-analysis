@@ -1,5 +1,9 @@
 # scripts/smoke.py
-import os, sys, json, importlib, pandas as pd
+import os
+import sys
+import json
+import importlib
+import pandas as pd
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(ROOT)  # project root
@@ -11,7 +15,16 @@ print("== Smoke check ==")
 print("Python:", sys.executable)
 
 # deps
-for mod in ["pandas","numpy","sklearn","nltk","matplotlib","wordcloud","joblib","tqdm","streamlit"]:
+for mod in [
+    "pandas",
+    "numpy",
+    "sklearn",
+    "nltk",
+    "matplotlib",
+    "wordcloud",
+    "joblib",
+    "tqdm",
+        "streamlit"]:
     try:
         importlib.import_module(mod)
     except Exception as e:
@@ -29,7 +42,7 @@ print("Data file:", data_path or "NOT FOUND")
 if data_path:
     df = pd.read_csv(data_path, nrows=5)
     print("Columns:", list(df.columns))
-    need = {"text","label"} if data_path.endswith("reviews_mapped.csv") else set()
+    need = {"text", "label"} if data_path.endswith("reviews_mapped.csv") else set()
     if need and not need.issubset(df.columns):
         print("[FAIL] expected columns text,label in reviews_mapped.csv")
         sys.exit(1)
@@ -40,4 +53,3 @@ os.makedirs(md, exist_ok=True)
 print("Models dir:", md, "files:", os.listdir(md))
 
 print("[OK] smoke done")
-

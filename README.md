@@ -36,7 +36,7 @@ Use any review dataset with at least two columns:
 - `text` — raw review text
 - `label` — sentiment class (`positive`, `negative`, optional `neutral`)
 
-**Recommended**: IMDB 50K movie reviews (CSV) or Amazon reviews subset.  
+**Recommended**: IMDB 50K movie reviews (CSV) or Amazon reviews subset.
 Place the CSV as `data/reviews.csv`. If your dataset has different column names, adjust in `src/config.py`.
 
 ## ⚙️ Setup
@@ -112,24 +112,24 @@ Artifacts: \`outputs/confusion_matrix.png\`, \`outputs/confusion_matrix_norm.png
 
 
 ## Portfolio summary
-Production-like NLP pipeline (TF-IDF + Logistic Regression, 1–2 grams, class_weight=balanced, Platt calibration).  
-Holdout Macro F1: **0.898** · Tuned threshold: **0.470**.  
-Artifacts: CM/ROC/PR/Calibration plots in `docs/`.  
+Production-like NLP pipeline (TF-IDF + Logistic Regression, 1–2 grams, class_weight=balanced, Platt calibration).
+Holdout Macro F1: **0.898** · Tuned threshold: **0.470**.
+Artifacts: CM/ROC/PR/Calibration plots in `docs/`.
 Interfaces: Streamlit (`make run-app`) and REST API (`make run-api`, see `/docs`).
 
 
 ---
 
 ### 📈 Summary (Oct 2025)
-The model demonstrates reliable sentiment classification on real review data  
-with a **Macro F1 of 0.889**. Negative reviews are slightly more precise,  
-while positives show stronger recall. The pipeline balances interpretability  
+The model demonstrates reliable sentiment classification on real review data
+with a **Macro F1 of 0.889**. Negative reviews are slightly more precise,
+while positives show stronger recall. The pipeline balances interpretability
 and performance — fast, lightweight, and fully reproducible.
 
 
 ### Health checks
 - App: http://localhost:8501
-- API: http://localhost:8000/health  (Docker compose)  
+- API: http://localhost:8000/health  (Docker compose)
 - Swagger: http://localhost:8000/docs
 
 
@@ -140,3 +140,12 @@ and performance — fast, lightweight, and fully reproducible.
 | Logistic (TF-IDF 1–2, balanced, calib) | 0.920 | 0.920 | 0.920 |
 | LinearSVM (TF-IDF 1–2, balanced, calib) | 0.920 | 0.920 | 0.920 |
 
+
+## REST API (FastAPI)
+- Start: `make run-api` → Swagger at `http://127.0.0.1:8000/docs`
+- Example:
+```
+curl -s -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Very dirty restroom"}'
+```
