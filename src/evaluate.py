@@ -18,6 +18,44 @@ from sklearn.model_selection import train_test_split  # noqa: E402
 
 
 def _plot_cm(cm, labels, path: Path, title: str, fmt: str) -> None:
+    import matplotlib.pyplot as plt
+    n = len(labels)
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=220)
+    vmax = float(cm.max()) if cm.size and cm.max() > 0 else 1.0
+    im = ax.imshow(cm, interpolation="nearest", cmap="Blues", vmin=0.0, vmax=vmax, aspect="equal")
+    ax.set_title(title)
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(labels)
+    ax.set_yticklabels(labels)
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("True")
+    ax.set_xticks([x - 0.5 for x in range(0, n + 1)], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(0, n + 1)], minor=True)
+    ax.grid(which="minor", color="#999999", linestyle="-", linewidth=0.5, alpha=0.6)
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color("#333333")
+        spine.set_linewidth(1.0)
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            val = cm[i, j]
+            txt = f"{val:.2f}" if fmt != "d" else str(int(val))
+            color = "white" if vmax and val > 0.6 * vmax else "black"
+            ax.text(
+                j,
+                i,
+                txt,
+                ha="center",
+                va="center",
+                fontsize=12,
+                fontweight="bold",
+                color=color)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=10)
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight", facecolor="white", edgecolor="none")
+    plt.close(fig)
     fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
     vmax = float(cm.max()) if cm.size and cm.max() > 0 else 1.0
     im = ax.imshow(cm, interpolation="nearest", cmap="Blues", vmin=0.0, vmax=vmax)
