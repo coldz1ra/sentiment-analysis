@@ -95,17 +95,12 @@ python src/predict.py --text "I absolutely love this product!"
 Macro F1: 0.9222
 negative: P=0.927 R=0.917 F1=0.922
 positive: P=0.918 R=0.928 F1=0.923
-Artifacts: `docs/img/confusion_matrix.png?raw=1?raw=1`.
-
-
-## Results (holdout)
+Artifacts: `docs/img/confusion_matrix.png?raw=1)
 - Macro F1: **0.922**
 - Negative: P=0.927, R=0.917, F1=0.922
 - Positive: P=0.918, R=0.928, F1=0.923
 
-Artifacts: \`docs/img/confusion_matrix.png?raw=1?raw=1\`.
-
-## Findings (human analysis)
+Artifacts: \`docs/img/confusion_matrix.png?raw=1)
 - Negatives cluster around delivery/returns support issues.
 - Positives highlight product quality and value-for-money.
 - Most errors are very short or ironic texts (see `outputs/errors.csv`).
@@ -181,4 +176,4 @@ Total: 50000
 
 | Confusion Matrix | ROC Curve | PR Curve |
 |---|---|---|
-| ![Confusion](docs/img/confusion_matrix.png?raw=1?raw=1) |
+| ![Confusion](docs/img/confusion_matrix.png?raw=1) |

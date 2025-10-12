@@ -1,32 +1,31 @@
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    RocCurveDisplay,
+    PrecisionRecallDisplay,
+)
+from joblib import load
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import argparse
 import json
 from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-from joblib import load  # noqa: E402
-from sklearn.metrics import (  # noqa: E402
-    classification_report,
-    confusion_matrix,
-    RocCurveDisplay,
-    PrecisionRecallDisplay,
-)
-from sklearn.model_selection import train_test_split  # noqa: E402
 
 
 def _plot_cm(cm, labels, path: Path, title: str, fmt: str) -> None:
-    import matplotlib.pyplot as plt
-    n = len(labels)
     fig, ax = plt.subplots(figsize=(6, 6), dpi=220)
     vmax = float(cm.max()) if cm.size and cm.max() > 0 else 1.0
-    im = ax.imshow(cm, interpolation="nearest", cmap="Blues", vmin=0.0, vmax=vmax, aspect="equal")
+    im = ax.imshow(cm, cmap="Blues", vmin=0.0, vmax=vmax, aspect="equal")
     ax.set_title(title)
+    n = len(labels)
     ax.set_xticks(range(n))
     ax.set_yticks(range(n))
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, rotation=45, ha="right")
     ax.set_yticklabels(labels)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("True")
@@ -51,76 +50,82 @@ def _plot_cm(cm, labels, path: Path, title: str, fmt: str) -> None:
                 fontsize=12,
                 fontweight="bold",
                 color=color)
-    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.ax.tick_params(labelsize=10)
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight", facecolor="white", edgecolor="none")
-    plt.close(fig)
-    fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-    vmax = float(cm.max()) if cm.size and cm.max() > 0 else 1.0
-    im = ax.imshow(cm, interpolation="nearest", cmap="Blues", vmin=0.0, vmax=vmax)
-    ax.set_title(title)
-    ax.set_xticks(range(len(labels)))
-    ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels)
-    ax.set_yticklabels(labels)
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            ax.text(j, i, format(cm[i, j], fmt), ha="center", va="center")
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("True")
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
+def _align_union(y_true, y_pred):
+    y_true_s = np.array([str(v) for v in y_true])
+    y_pred_s = np.array([str(v) for v in y_pred])
+    labels = sorted(np.unique(np.concatenate([y_true_s, y_pred_s])))
+    lab2idx = {lab: i for i, lab in enumerate(labels)}
+    y_true_idx = np.array([lab2idx[v] for v in y_true_s])
+    y_pred_idx = np.array([lab2idx[v] for v in y_pred_s])
+    return y_true_s, y_pred_s, y_true_idx, y_pred_idx, labels
+
+
+def _scores_binary(model, X):
+    try:
+        proba = model.predict_proba(X)
+        if proba is not None:
+            if proba.ndim == 2 and proba.shape[1] >= 2:
+                return proba[:, -1]
+            if proba.ndim == 1:
+                return proba
+    except Exception:
+        pass
+    try:
+        dec = model.decision_function(X)
+        if dec is not None:
+            z = np.array(dec, dtype=float)
+            if z.ndim > 1:
+                z = z[:, -1]
+            z = np.clip(z, -20, 20)
+            return 1.0 / (1.0 + np.exp(-z))
+    except Exception:
+        pass
+    return None
+
+
 def main() -> None:
-    p = argparse.ArgumentParser()
-    p.add_argument("--data_path", default="data/reviews_mapped.csv")
-    p.add_argument("--model_dir", default="models")
-    p.add_argument("--out_dir", default="outputs")
-    p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--test_size", type=float, default=0.2)
-    args = p.parse_args()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data_path", default="data/reviews_mapped.csv")
+    ap.add_argument("--model_dir", default="models")
+    ap.add_argument("--out_dir", default="outputs")
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--test_size", type=float, default=0.2)
+    args = ap.parse_args()
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     mdir = Path(args.model_dir)
 
     best = mdir / "model_best.joblib"
-    if best.exists():
-        model_path = best
-    else:
-        candidates = sorted(mdir.glob("model_*.joblib"))
-        assert candidates, "No saved model in models/"
-        model_path = candidates[0]
+    model_path = best if best.exists() else sorted(mdir.glob("model_*.joblib"))[0]
     model = load(model_path)
     print(f"Loaded model: {model_path.name}")
 
     df = pd.read_csv(args.data_path)
-    assert {"text", "label"}.issubset(df.columns), "CSV must have columns 'text' and 'label'"
+    assert {"text", "label"}.issubset(df.columns), "CSV must have 'text' and 'label'"
 
     X = df["text"].astype(str).values
     y = df["label"].astype(str).values
-    X_tr, X_te, y_tr, y_te = train_test_split(
+    _, X_te, _, y_te = train_test_split(
         X, y, test_size=args.test_size, random_state=args.seed, stratify=y
     )
 
     y_pred = model.predict(X_te)
+    y_true_s, y_pred_s, y_true_idx, y_pred_idx, labels = _align_union(y_te, y_pred)
 
-    y_proba = None
-    if hasattr(model, "predict_proba"):
-        try:
-            y_proba = model.predict_proba(X_te)[:, 1]
-        except Exception:
-            y_proba = None
-
-    report = classification_report(y_te, y_pred, output_dict=True)
+    report = classification_report(
+        y_true_s, y_pred_s, labels=labels, output_dict=True, zero_division=0
+    )
     (out / "classification_report.json").write_text(json.dumps(report, indent=2))
 
-    labels = sorted(np.unique(y))
-    cm = confusion_matrix(y_te, y_pred, labels=labels)
+    cm = confusion_matrix(y_true_idx, y_pred_idx, labels=range(len(labels)))
+    pd.DataFrame(cm, index=labels, columns=labels).to_csv(out / "confusion_matrix.csv")
     _plot_cm(cm, labels, out / "confusion_matrix.png", "Confusion Matrix", "d")
 
     cmn = cm.astype(float)
@@ -128,22 +133,31 @@ def main() -> None:
     cmn = np.divide(cmn, row_sum, out=np.zeros_like(cmn), where=row_sum != 0)
     _plot_cm(cmn, labels, out / "confusion_matrix_norm.png", "Confusion Matrix (normalized)", ".2f")
 
-    if y_proba is not None:
-        y_bin = (y_te == labels[-1]).astype(int)
-
+    scores = _scores_binary(model, X_te)
+    if scores is not None and len(labels) == 2:
+        pos_label = labels[-1]
+        y_bin = (np.array(y_true_s) == pos_label).astype(int)
         fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        RocCurveDisplay.from_predictions(y_bin, y_proba, ax=ax)
+        RocCurveDisplay.from_predictions(y_bin, scores, ax=ax)
         ax.set_title("ROC Curve")
         fig.tight_layout()
         fig.savefig(out / "roc_curve.png", bbox_inches="tight", facecolor="white")
         plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        PrecisionRecallDisplay.from_predictions(y_bin, y_proba, ax=ax)
+        PrecisionRecallDisplay.from_predictions(y_bin, scores, ax=ax)
         ax.set_title("Precision-Recall Curve")
         fig.tight_layout()
         fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
         plt.close(fig)
+    else:
+        Path(out / "roc_curve.png").write_bytes(b"")
+        Path(out / "pr_curve.png").write_bytes(b"")
+
+    print("CM labels:", labels)
+    print("CM matrix:\n", cm)
+    print("Saved:", [str(p) for p in [out / "confusion_matrix.png", out /
+          "confusion_matrix_norm.png", out / "roc_curve.png", out / "pr_curve.png"]])
 
 
 if __name__ == "__main__":
