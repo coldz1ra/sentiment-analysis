@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 
 import joblib
-import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
