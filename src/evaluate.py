@@ -79,9 +79,7 @@ def main() -> None:
             y_proba = None
 
     report = classification_report(y_te, y_pred, output_dict=True)
-    (out / "classification_report.json").write_text(
-        json.dumps(report, indent=2)
-    )
+    (out / "classification_report.json").write_text(json.dumps(report, indent=2))
 
     labels = sorted(np.unique(y))
     cm = confusion_matrix(y_te, y_pred, labels=labels)
@@ -90,31 +88,24 @@ def main() -> None:
     cmn = cm.astype(float)
     row_sum = cmn.sum(axis=1, keepdims=True)
     cmn = np.divide(cmn, row_sum, out=np.zeros_like(cmn), where=row_sum != 0)
-    _plot_cm(
-        cmn, labels, out / "confusion_matrix_norm.png",
-        "Confusion Matrix (normalized)", ".2f"
-    )
+    _plot_cm(cmn, labels, out / "confusion_matrix_norm.png", "Confusion Matrix (normalized)", ".2f")
 
     if y_proba is not None:
         y_bin = (y_te == labels[-1]).astype(int)
 
         fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        try:
-            RocCurveDisplay.from_predictions(y_bin, y_proba, ax=ax)
-            ax.set_title("ROC Curve")
-            fig.tight_layout()
-            fig.savefig(out / "roc_curve.png", bbox_inches="tight", facecolor="white")
-        finally:
-            plt.close(fig)
+        RocCurveDisplay.from_predictions(y_bin, y_proba, ax=ax)
+        ax.set_title("ROC Curve")
+        fig.tight_layout()
+        fig.savefig(out / "roc_curve.png", bbox_inches="tight", facecolor="white")
+        plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(5, 4), dpi=200)
-        try:
-            PrecisionRecallDisplay.from_predictions(y_bin, y_proba, ax=ax)
-            ax.set_title("Precision-Recall Curve")
-            fig.tight_layout()
-            fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
-        finally:
-            plt.close(fig)
+        PrecisionRecallDisplay.from_predictions(y_bin, y_proba, ax=ax)
+        ax.set_title("Precision-Recall Curve")
+        fig.tight_layout()
+        fig.savefig(out / "pr_curve.png", bbox_inches="tight", facecolor="white")
+        plt.close(fig)
 
 
 if __name__ == "__main__":
