@@ -95,7 +95,7 @@ python src/predict.py --text "I absolutely love this product!"
 Macro F1: 0.9222
 negative: P=0.927 R=0.917 F1=0.922
 positive: P=0.918 R=0.928 F1=0.923
-Artifacts: `outputs/confusion_matrix.png`, `outputs/confusion_matrix_norm.png`, `outputs/roc_curve.png`, `outputs/pr_curve.png`.
+Artifacts: `docs/img/confusion_matrix.png`, `docs/img/confusion_matrix_norm.png`, `docs/img/roc_curve.png`, `docs/img/pr_curve.png`.
 
 
 ## Results (holdout)
@@ -103,7 +103,7 @@ Artifacts: `outputs/confusion_matrix.png`, `outputs/confusion_matrix_norm.png`, 
 - Negative: P=0.927, R=0.917, F1=0.922
 - Positive: P=0.918, R=0.928, F1=0.923
 
-Artifacts: \`outputs/confusion_matrix.png\`, \`outputs/confusion_matrix_norm.png\`, \`outputs/roc_curve.png\`, \`outputs/pr_curve.png\`.
+Artifacts: \`docs/img/confusion_matrix.png\`, \`docs/img/confusion_matrix_norm.png\`, \`docs/img/roc_curve.png\`, \`docs/img/pr_curve.png\`.
 
 ## Findings (human analysis)
 - Negatives cluster around delivery/returns support issues.
@@ -181,4 +181,4 @@ Total: 50000
 
 | Confusion Matrix | ROC Curve | PR Curve |
 |---|---|---|
-| ![Confusion](outputs/confusion_matrix.png) | ![ROC](outputs/roc_curve.png) | ![PR](outputs/pr_curve.png) |
+| ![Confusion](docs/img/confusion_matrix.png) | ![ROC](docs/img/roc_curve.png) | ![PR](docs/img/pr_curve.png) |
