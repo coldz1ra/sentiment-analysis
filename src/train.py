@@ -6,7 +6,7 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -66,9 +66,30 @@ def main(args):
         # Fallback: for tiny datasets (e.g., CI), disable stratify if any class has <2 samples
     vc = pd.Series(y).value_counts()
     strat = y if (vc.min() >= 2) else None
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=args.test_size, random_state=args.seed, stratify=strat
-    )
+        # Robust split for tiny datasets: always try stratified split
+    import numpy as np, pandas as pd
+    y_series = pd.Series(y)
+    vc = y_series.value_counts()
+    unique_classes = vc.index.tolist()
+    # if any class has <2 samples, duplicate one sample of that class to make it >=2
+    if vc.min() < 2:
+        X = list(X)
+        y = list(y)
+        for cls, cnt in vc.items():
+            if cnt < 2:
+                # дублируем первую встречу этого класса
+                idx = y.index(cls)
+                X.append(X[idx])
+                y.append(y[idx])
+        X = np.array(X, dtype=object)
+        y = np.array(y, dtype=object)
+        y_series = pd.Series(y)
+        vc = y_series.value_counts()
+    # используем StratifiedShuffleSplit, чтобы в train/test были оба класса
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=args.test_size, random_state=args.seed)
+    tr_idx, te_idx = next(sss.split(X, y))
+    X_train, X_test = X[tr_idx], X[te_idx]
+    y_train, y_test = np.array(y)[tr_idx], np.array(y)[te_idx]
 
     le = LabelEncoder().fit(y)
     y_train_enc = le.transform(y_train)
